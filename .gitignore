@@ -96,7 +96,7 @@ publish/
 # Enable nuget packages restore when building
 #!packages/
 packages/
-#!packages/repositories.config
+!packages/repositories.config
 
 # Windows Azure Build Output
 csx
@@ -159,3 +159,5 @@ $RECYCLE.BIN/
 
 # VisualStudioCode
 .vscode
+
+
