@@ -1,0 +1,49 @@
+﻿@model Auth.Sample.Ui.Models.RegisterModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>注册页面</title>
+    <style type="text/css">
+        body,div {margin: 0 auto;}
+    </style>
+</head>
+<body>
+    <div>
+        @using (Html.BeginForm("RegisterUser", "Account"))
+        {
+            <table>
+                <tr>
+                    <td>
+                        <label>用户名</label>
+                    </td>
+                    <td>
+                        @Html.TextBoxFor(m => m.UserName)
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>用户名</label>
+                    </td>
+                    <td>
+                        @Html.TextBoxFor(m => m.UserName)
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>用户名</label>
+                    </td>
+                    <td>
+                        @Html.TextBoxFor(m => m.UserName)
+                    </td>
+                </tr>
+            </table>
+        }
+    </div>
+</body>
+</html>

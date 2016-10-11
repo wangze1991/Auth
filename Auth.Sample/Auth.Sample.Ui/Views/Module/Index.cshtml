@@ -1,0 +1,244 @@
+﻿@{
+    ViewBag.Title = "菜单导航";
+    Layout = "~/Views/shared/_EasyUiLayout.cshtml";
+}
+<style>
+    .z-toolbar {border: 1px solid #95B8E7;background-color: #E0ECFF;}
+    #grid { margin-top: 1px;}
+</style>
+<div>
+    <div class="z-toolbar">
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-arrow_refresh" title="刷新" data-handle="reload">刷新</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-add" title="新增" data-handle="add">新增</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-edit" title="编辑" data-handle="edit">编辑</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-cross" title="删除" data-handle="delete">删除</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-redo" title="取消" data-handle="cancel">取消</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-save" title="保存" data-handle="save">保存</a>
+    </div>
+    <table id="grid"></table>
+</div>
+@section script{
+    <script>
+        require(['jquery', 'util', 'easyui', 'eMessager', 'eUtil'], function ($, util, easyui, eMessager, eUtil) {
+            require(['domReady'], function (doc) {
+                var page = new ModuleIndex({
+                    'url': '/Module/GetModule'
+                });
+            });
+            function ModuleIndex(option) {
+                var defaultOpt = {
+                    toolbar: '.z-toolbar',
+                    grid: '#grid',
+                    url: ''
+                };
+                this.opt = $.extend({}, defaultOpt, option);
+                this.editRows = [];//editRows包括新增
+                this.addRows = [];
+                this._init();
+            }
+            var proto = ModuleIndex.prototype;
+            proto._init = function () {
+                var self = this;
+                self._edataGridInit();
+                self._bindButtonEvent();
+            }
+            proto._edataGridInit = function () {
+                var self = this;
+                $(self.opt.grid).treegrid({
+                    url: self.opt.url,
+                    idField: '_id',
+                    treeField: 'Name',
+                    rowNumber: true,
+                    frozenColumns: [[{ field: 'id', hidden: true }]],
+                    columns: self._getGridColumn(),
+                    loadFilter: function (d) {
+                        if (d && d.rows && d.rows.length > 0) {
+                            $.each(d.rows, function (i, item) {
+                                if (item['ParentCode']) {
+                                    d.rows[i]['_parentId'] = item['ParentCode'];
+                                }
+                                d.rows[i]['iconCls'] = item['Icon'];
+                                d.rows[i]['_id'] = item['MenuCode'];
+                                d.rows[i]['IsDisabled'] = item['IsDisabled'] ? 'true' : 'false';
+                                d.rows[i]['IsView'] = item['IsView'] ? 'true' : 'false'
+                            });
+                        }
+                        //d['iconCls'] = d['Icon'];
+                        return d;
+                    }
+
+                });
+            }
+            //右键操作
+            prompt._gridContextMenu = function () {
+
+            }
+            proto._getGridColumn = function () {
+                var self = this;
+                var array = [];
+                array.push({ field: '_id', hidden: true });
+                array.push({ field: 'MenuCode', width: 100, title: '菜单编码', editor: { type: 'validatebox', options: { required: true } } });
+                array.push({ field: 'Name', width: 140, title: '菜单名称', editor: { type: 'validatebox', options: { required: true } } });
+                array.push({ field: 'ParentCode', width: 100, title: '上级编码', editor: 'combotree', formatter: self._parentCodeFormatter() });
+                array.push({ field: 'Icon', width: 100, title: '图标', editor: 'text' });
+                array.push({ field: 'Url', width: 100, title: '链接地址', editor: 'text' });
+                array.push({ field: 'IsView', width: 65, title: '是否可见', formatter: self._checkFormatter(), editor: { type: 'checkbox', options: { on: 'true', off: 'false' } } });
+                array.push({ field: 'IsDisabled', width: 65, title: '是否禁用', formatter: self._checkFormatter(), editor: { type: 'checkbox', options: { on: 'true', off: 'false' } } });
+                array.push({ field: 'Sort', width: 65, title: '排序', editor: { type: 'numberbox' } });
+                array.push({ field: 'Button', width: 80, title: '页面按钮', formatter: self._btnChooseFormatter() });
+                return [array];
+            }
+            proto._checkFormatter = function () {
+                return function (value, row) {
+                    return value === 'true' ? '是' : '否'
+                }
+            }
+            proto._parentCodeFormatter = function () {
+                var self = this;
+                return function (value, row) {
+                    if (!value) return value;
+                    var parentRow = $(self.opt.grid).treegrid('getParent', row['_id']);
+                    return parentRow ? parentRow['Name'] : value;
+                };
+            }
+            proto._btnChooseFormatter = function () {
+                var self = this;
+                return function (value, row) {
+                    //return (row.Url && row.Url != '#') ? '<a href="#" onclick="setButton(\'' + row['_id'] + '\')"><span class="icon icon-1012333">&nbsp;</span>[设置按钮]</a>' : '';
+                    return (row.Url) ? '<a href="#" onclick="setButton(\'' + row['_id'] + '\')"><span class="icon icon-1012333">&nbsp;&nbsp;&nbsp;&nbsp;</span>[设置按钮]</a>' : '';
+                };
+            }
+            proto._bindButtonEvent = function () {
+                var self = this;
+                $('a', self.opt.toolbar).on('click', function () {
+                    var handleName = $(this).data('handle');
+                    self._buttonEventChoose(handleName).call(this);
+                });
+            }
+            proto._buttonEventChoose = function (handleName) {
+                var self = this;
+                switch (handleName) {
+                    case 'reload': return self._reload();
+                    case 'add': return self._add();
+                    case 'edit': return self._edit();
+                    case 'save': return self._save();
+                    case 'cancel': return self._cancel();
+                    case 'search': return function () {
+
+                    }
+                    default: return function () { };
+                }
+            }
+            proto._reload = function () {
+                var self = this;
+                return function () {
+                    $(self.opt.grid).treegrid('reload');
+                }
+            }
+            proto._add = function () {
+                var self = this;
+                return function () {
+                    var id = new Date().getTime();
+                    var row = { _id: id, MenuCode: '', Name: '', iconCls: '', ParentCode: '' };
+                    self.editRows.push(id);
+                    self.addRows.push(id);
+                    $(self.opt.grid).treegrid('append', { parent: '', data: [row] })
+                                    .treegrid('beginEdit', id);
+                    self._initComboTree(id);
+                    self._initIconDialog(id);
+                    return false;
+                }
+            }
+            proto._edit = function () {
+                var self = this;
+                return function () {
+                    var grid = $(self.opt.grid),
+                        selections = grid.treegrid('getSelections');
+                    if ((!selections) || selections.length == 0) eMessager.warning('请选择一条修改的数据');
+                    $.each(selections, function (i, item) {
+                        grid.treegrid('beginEdit', selections[i]['_id']);
+                        self.editRows.push(selections[i]['_id']);
+                        self._initComboTree(selections[i]['_id']);
+                        self._initIconDialog(selections[i]['_id']);
+                    });
+                    grid.treegrid('unselectAll');
+
+                }
+            }
+            proto._save = function () {
+                var self = this;
+                return function () {
+                    var isValid = true,
+                        grid = $(self.opt.grid);
+                    if (self.editRows.length == 0) {
+                        eMessager.warning('没有需要保存的数据');
+                        return;
+                    }
+                    $.each(self.editRows, function (i, index) {
+                        if (!grid.treegrid('validateRow', index)) {
+                            grid.treegrid('select', index);
+                            isValid = false;
+                        }
+                    });
+                    if (isValid === false) {
+                        eMessager.warning('当前有编辑行未通过验证');
+                        return;
+                    };
+
+                    $.each(self.editRows, function (i, index) {
+                        grid.treegrid('endEdit', index);
+                    });
+                    var postData = { 'modules': JSON.stringify(grid.treegrid('getChanges')) };
+                    eUtil.ajax({
+                        url: '/Module/AddOrEditModule',
+                        data: postData,
+                        done: function (data) {
+                            self.editRows = [];
+                            grid.treegrid('acceptChanges');
+                            eMessager.info('保存成功');
+                            self._reload()();
+                        }
+                    });
+
+                };
+
+            }
+            proto._cancel = function () {
+                var self = this;
+                return function () {
+                    $.each(self.editRows, function (i, item) {
+                        $(self.opt.grid).treegrid('cancelEdit', item);
+                    });
+                    $.each(self.addRows, function (i, item) {
+                        $(self.opt.grid).treegrid('deleteRow', item);
+                    })
+                    $(self.opt.grid).treegrid('rejectChanges');
+                    self.editRows = [];
+                    self.addRows = [];
+                    return false;
+                }
+
+            }
+            proto._initComboTree = function (id) {
+                var self = this,
+                    grid = $(self.opt.grid),
+                    editor = grid.treegrid('getEditor', { id: id, field: 'ParentCode' }),
+                    data = JSON.parse(JSON.stringify(grid.treegrid('getData')).replace(/_id/g, "id").replace(/Name/g, "text"));
+                $(editor.target).combotree('loadData', data);
+            }
+            proto._initIconDialog = function (id) {
+                var self = this,
+                    grid = $(self.opt.gird);
+                //var editor = grid.treegrid('getEditor', { id: id, field: 'Icon' });
+            }
+            window.setButton = function (id) {
+                eUtil.iframeDialog({
+                    title: '设置按钮',
+                    url: '/Button/ChooseButton?id='+id
+                });
+            }
+
+        });
+
+    </script>
+}

@@ -1,0 +1,225 @@
+﻿@{
+    ViewBag.Title = "角色管理";
+    Layout = "~/Views/shared/_EasyUiLayout.cshtml";
+}
+
+<!--body开始-->
+<div class="easyui-layout" fit="true">
+    <div region="north" style="height:35px;" split="true">
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-add" title="新增" data-handle="add">新增</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-edit" title="编辑" data-handle="edit">编辑</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-cross" title="删除" data-handle="delete">删除</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-key" title="角色权限" data-handle="role">角色权限</a>
+    </div>
+
+    <div region="center" title="角色管理" fit="true">
+        <table id="grid"></table>
+    </div>
+</div>
+<script id="edit_template" type="text/html">
+    <form id="ff" method="post">
+        <input type="hidden" name="Id" value="{{Id}}" />
+        <table class="table table-bordered" style="margin:0 auto">
+            <tr>
+                <td>
+                    <label for="Name">名称:</label>
+                </td>
+                <td>
+                    <input type="text" name="Name" value="{{Name}}" class="easyui-validatebox" data-options="required:true" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="Sort">排序:</label>
+                </td>
+                <td>
+                    <input type="text" name="Sort" value="{{Sort}}" class="easyui-validatebox" data-options="required:true" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="Sort">启用:</label>
+                </td>
+                <td>
+                    <select id="IsDisabled" name="IsDisabled" class="easyui-combobox" style="width:170px;" data-options="required:true">
+                        <option value="false">是</option>
+                        <option value="true">否</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="Sort">备注:</label>
+                </td>
+                <td>
+                    <textarea name="Remark" class="textbox-text easyui-validatebox textbox-prompt textarea" autocomplete="off" style=" height: 40px;width:420px" > {{Remark}}</textarea>
+                </td>
+            </tr>
+        </table>
+    </form>
+</script>
+
+@section script{
+    <script>
+        require(['jquery', 'util', 'easyui', 'eMessager', 'eUtil', 'template'], function ($, util, easyui, eMessager, eUtil, template) {
+            require(['domReady'], function (doms) {
+                var exporter = {};
+                exporter.opts= {
+                    grid: $('#grid'),
+                    url: '/Role/GetRoleList',
+                    addBtn: $('[data-handle="add"]'),
+                    editBtn: $('[data-handle="edit"]'),
+                    rightBtn:$('[data-handle="role"]'),
+                    addUrl:'/Role/Save',
+                    editUrl:'/Role/Save',
+                    form:'ff',
+                    tmp:'edit_template',
+                    deleteUrl:'edit_template',
+                    setRoleUrl:''
+                };
+                exporter.init = function () {
+                    this.grid.init();
+                    this.opts.addBtn.on('click', function (e) {
+                        exporter.add.call(this, e);
+                        return false;
+                    });
+
+                    this.opts.editBtn.on('click', function (e) {
+                        exporter.edit.call(this, e);
+                        return false;
+                    });
+                    this.opts.rightBtn.on('click', function (e) {
+                        exporter.right.call(this, e);
+                        return false;
+                    });
+                }
+
+
+                //**grid**
+                exporter.grid = {};
+                exporter.grid.init = function () {               
+                    exporter.opts.grid.datagrid({
+                        url: exporter.opts.url,
+                        rownumbers: true,
+                        frozenColumns: [[{ field: 'Id', hidden: true }]],
+                        columns: this.getColumn(),
+                        pagination:true
+                    });
+                }
+                exporter.grid.getColumn = function () {
+                    return [[
+                        
+                           { field: 'Name', title: '角色名称', width:120 },
+                           { field: 'Sort', title: '排序', width: 80 },
+                           { field:'IsDisabledName',title:'启用',width:80}]];
+
+                }
+                exporter.grid.reload = function () {
+                    exporter.opts.grid.datagrid('reload');
+                }
+                exporter.grid.getSelection = function () {
+                    return exporter.opts.grid.datagrid('getSelections');
+                }
+                //**grid end**
+
+                //**button event
+                exporter.add = function () {
+                    var self=exporter;
+                    var html = template(self.opts.tmp, {});
+                    self.showWindow('添加角色',html, self.opts.addUrl,self.formValid);
+                }
+
+                exporter.edit = function () {
+                    var self = exporter;
+                    var selections = self.grid.getSelection();
+                    if (selections === null || selections.length === 0) {
+                        eMessager.warning('请选择一条数据')
+                        return;
+                    }
+                    if (selections.length > 1) {
+                        eMessager.warning('只能选择一条数据');
+                        return;
+                    }
+                    var html = template(self.opts.tmp, selections[0]);
+                    self.showWindow('编辑角色', html, self.opts.editUrl, function (body, win, url) {
+                        win.$('#IsDisabled').combobox('select', selections[0]['IsDisabled'].toString());
+                        exporter.formValid(body, win,url);
+                    });
+                }
+
+                exporter.delete = function () {
+
+                }
+
+
+                /**设置权限
+                */
+                exporter.right = function () {
+                    var selections = exporter.grid.getSelection();
+                    if (!selections || selections.length == 0) {
+                        eMessager.warning('请选择角色');
+                        return;
+                    }
+                    if (selections.length > 1) {
+                        eMessager.warning('一次只能选择一个角色');
+                        return;
+                    }
+                    eUtil.showWindow({
+                        iconCls:'icon-role',
+                        title: '设置角色权限',
+                        useiframe: true,
+                        content: 'url:/Module/RoleModuleButton?roleId='+selections[0]['Id'],
+                        showMask:true
+                    });
+                }
+
+                exporter.showWindow = function (title,html,url,onBeforeOpen) {
+                    eUtil.showWindow({
+                        width: 580,
+                        height: 300,
+                        title: title,
+                        content: html,
+                        onBeforeOpen: function (body, win) {
+                            onBeforeOpen(body, win,url);
+                        },
+                        buttons: [{
+                            text: '确认', iconCls: 'icon-ok', handler: function (body) {
+                                window.top.$('#'+exporter.opts.form).submit();
+                                return false;
+
+                            }
+                        }, {
+                            text: '取消', iconCls: 'icon-cancel', handler: function (body) {
+                                body.close();
+                            }
+                        }]
+                    });
+
+                }
+                exporter.formValid = function (body,win,url) {
+                    win.$('#'+exporter.opts.form) .form({
+                        url: url,
+                        onSubmit: function () {
+                            var isValid = win.$(this).form('validate');
+                            return isValid;
+                        },
+                        success: function (data) {
+                            data = $.parseJSON(data);
+                            if (data && data.isSuccess) {
+                                body.close();
+                                exporter.grid.reload();
+                                eMessager.info('保存成功', '提示');
+                            } else {
+                                eMessager.warning('保存失败', '提示');
+                            }
+                        }
+                    });
+                }
+
+                //**button event end
+
+                exporter.init();
+            });
+        });
+    </script>
+}

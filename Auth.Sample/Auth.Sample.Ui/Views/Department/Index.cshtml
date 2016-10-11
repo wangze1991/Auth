@@ -1,0 +1,200 @@
+﻿@{
+    ViewBag.Title = "组织机构管理";
+    Layout = "~/Views/shared/_EasyUiLayout.cshtml";
+}
+
+
+<!--body开始-->
+<div class="easyui-layout" fit="true">
+    <div region="north" style="height:35px;" split="true">
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-add" title="新增" data-handle="add">新增</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-edit" title="编辑" data-handle="edit">编辑</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-cross" title="删除" data-handle="delete">删除</a>
+    </div>
+
+    <div region="west" title="组织结构" split="true" style="width:350px;">
+           <div class="easyui-accordion" data-options="fit:true,border:false" iconcls="icon-application_home">
+               <ul id="tt" class="easyui-tree" data-options="url:'/Department/GetChild'"></ul>
+        </div>
+    </div>
+        
+    <div region="center" title="组织结构详情" fit="true">
+        <form>
+            <table class="table">
+                <tr>
+                    <td class="td_title">
+                        <label for="Name">名称</label>
+                    </td>
+                    <td>
+                        <input type="text" name="Name"  class="easyui-validatebox" readonly="readonly"  style="border:0"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="td_title">
+                        排序:
+                    </td>
+                    <td>
+                        <input type="text" name="Sort" class="easyui-validatebox" readonly="readonly" style="border:0" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="td_title">
+                        备注:
+                    </td>
+                    <td>
+                        <input type="text" name="Sort" class="easyui-validatebox" readonly="readonly" style="border:0" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</div>
+
+<script id="edit_template" type="text/html">
+        <form id="ff" method="post">
+            {{ if (type==='edit')}}
+            <input type="hidden" name="Id" value="{{id}}" />
+            <input type="hidden" name="ParentId" value="{{ParentId}}" />
+            {{ else if (type==='add')}}
+            <input type="hidden" name="ParentId" value="{{id}}" />
+            {{else}}
+            {{/if}}
+
+            <table class="table table-bordered" style="margin:0 auto">
+                <tr>
+                    <td>
+                       <label for="Name">名称:</label> 
+                    </td>
+                    <td>
+                        <input type="text" name="Name" value="{{text}}" class="easyui-validatebox" data-options="required:true" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="Sort">排序:</label> 
+                    </td>
+                    <td>
+                        <input type="text" name="Sort" value="{{sort}}" class="easyui-validatebox" data-options="required:true" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="Sort">备注:</label>                    
+                    </td>
+                    <td>
+                        <textarea name="Remark" class="textbox-text easyui-validatebox textbox-prompt textarea" autocomplete="off" style=" height: 40px;width:420px"data-options="required:true"> {{remark}}</textarea>
+                    </td>
+                </tr>
+            </table>
+        </form>
+</script>
+
+@section script{
+    <script>
+        require(['jquery', 'util', 'easyui', 'eMessager', 'eUtil', 'template'], function ($, util, easyui, eMessager, eUtil, template) {
+            require(['domReady'], function (doms) {
+                var opt = {
+                    btn_add: $('[data-handle="add"]'),
+                    btn_edit: $('[data-handle="edit"]'),
+                    btn_del: $('[data-handle="delete"]'),
+                    tmp: 'edit_template',
+                    form: 'ff',
+                    tt:$('#tt'),
+                    formAddUrl: '/Department/Add',
+                    formEditUrl:'/Department/Edit'
+                };
+                opt.btn_add.on('click', function () {
+                    saveOrUpdate('add');
+                });
+                opt.btn_edit.on('click', function () {
+                    saveOrUpdate('edit');
+                });
+                opt.btn_del.on('click', function () {
+                    eMessager.confirm({
+                        msg: '确认删除吗？',
+                        fn: function (r) {
+                            if (!r) return;
+                            eMessager.info('删除成功');
+                        }
+                    });
+                });
+
+                function saveOrUpdate(type) {
+                    var selection = getSelection(),
+                        title = type === 'add' ? '新增' : '编辑';
+                    url = type === 'add' ? opt.formAddUrl : opt.formEditUrl;
+                    if (!selection) return null;
+                    var html = template(opt.tmp, { type:type, id: selection['id'] });
+                    eUtil.showWindow({
+                        width: 580,
+                        height:300,
+                        title:title,
+                        content: html,
+                        onBeforeOpen: function (body, win) {
+                            if (type === 'edit') {
+                                eUtil.ajax({
+                                    url: '/Department/Get',
+                                    data: { id: selection['id'] },
+                                    done: function (data) {
+                                        win.$('#' + opt.form).formBind(data);
+                                    }
+
+                                });
+                            }
+                            win.$('#' + opt.form).form({
+                                url: url,
+                                onSubmit: function () {
+                                    var isValid = win.$(this).form('validate');
+                                    return isValid;
+                                },
+                                success: function (data) {
+                                    data = $.parseJSON(data);
+                                    if (data && data.isSuccess) {
+                                        body.close();
+                                        eMessager.info('保存成功', '提示');
+                                        if (type === 'edit') {
+                                            var parent = opt.tt.tree('getParent', selection.target);
+                                            if (parent) {
+                                                opt.tt.tree('reload',parent.target);
+                                            } else {
+                                                opt.tt.tree('reload');
+                                            }
+                                          
+                                        } else {
+                                            opt.tt.tree('reload', selection.target);
+                                        }                        
+                                    } else {
+                                        eMessager.warning('保存失败', '提示');
+                                    }
+                                }
+                            });
+                     
+                        },
+                        buttons: [{
+                            text: '确认', iconCls: 'icon-ok', handler: function (body) {
+                                window.top.$('#' + opt.form).submit();
+                            }
+                        }, {
+                            text: '取消', iconCls: 'icon-cancel', handler: function (body) {
+                                body.close();
+                            }
+                        }]
+                    });
+                }
+
+                function getSelection() {
+                    var grid = $('#tt');
+                    var selection = grid.tree('getSelected');
+                    if (!selection) {
+                        eMessager.warning('请选择一条数据', '提示');
+                        return null;
+                    }
+                    return selection;
+                }
+
+            });
+        });
+    </script>
+}
+
+<!--body结束-->

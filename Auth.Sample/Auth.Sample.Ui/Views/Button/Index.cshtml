@@ -1,0 +1,138 @@
+﻿@{
+    ViewBag.Title = "按钮管理";
+    Layout = "~/Views/shared/_EasyUiLayout.cshtml";
+}
+<div>
+    <div class="z-toolbar">
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-add" title="新增" data-handle="add">新增</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-edit" title="编辑" data-handle="edit">编辑</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-cross" title="删除" data-handle="delete">删除</a>
+    </div>
+    <table id="grid"></table>
+    <div style="margin:0 auto">
+        <a href="#"  class="easyui-linkbutton" icon="icon-ok" title="确定" data-handle="ok">确定</a>
+        <a href="#"  class="easyui-linkbutton" icon="icon-cancel" title="取消" data-handle="cancel">取消</a>
+    </div>
+</div>
+@section script{
+    <script>
+        require(['jquery', 'util', 'easyui', 'eMessager', 'eUtil'], function ($, util, easyui, eMessager, eUtil) {
+            require(['domReady'], function (doms) {
+                var button = new ButtonManage();
+            });
+
+            function ButtonManage(option) {
+                var defaultOpt = {
+                    toolbar: '.z-toolbar',
+                    grid: '#grid',
+                    url: '/Button/GetButtonList'
+                };
+                this.opt = $.extend({}, defaultOpt, option);
+                this.grid = $(this.opt.grid);
+                this._init();
+
+            }
+            var proto = ButtonManage.prototype;
+
+            proto._init = function () {
+                var self = this;
+                $(self.grid).datagrid({
+                    url: self.opt.url,
+                    rowNumber: true,
+                    frozenColumns: [[{ field: 'id', checkbox: true }]],
+                    columns: self.getFields()
+                });
+                self.bindButtonEvent();
+            }
+
+            proto.getFields = function () {
+                var self = this;
+                var array = [];
+                array.push({ field: 'Id', hidden: true });
+                array.push({ field: 'Code', width: 140, title: '编码', editor: { type: 'validatebox', options: { required: true } } });
+                array.push({ field: 'Name', width: 100, title: '名称', editor: { type: 'validatebox', options: { required: true } } });
+                array.push({ field: 'Icon', width: 100, title: '图标', editor: 'text' });
+                array.push({ field: 'Sort', width: 100, title: '排序', editor: 'text' });
+                array.push({ field: 'Remark', width: 100, title: '备注说明', editor: 'text' });
+                return [array];
+            };
+
+            proto.bindButtonEvent = function () {
+                var self = this;
+                //新增
+                $('[data-handle="add"]').on('click', function () {
+                    var row = {
+                        'Code': '',
+                        'Name': '',
+                        'Icon': '',
+                        'Sort': '',
+                        'Url' : ''
+                    };
+                    self.grid.datagrid('insertRow', { index: 0, row: row })
+                             .datagrid('beginEdit', 0);
+                    return false;
+                });
+
+                //修改
+                $('[data-handle="edit"]').on('click', function () {
+                    var selections =self.grid.datagrid('getSelections');
+                    if ((!selections) || selections.length == 0) eMessager.warning('请选择一条修改的数据');
+                    $.each(selections, function (i, item) {
+                        var index = self.grid.datagrid('getRowIndex', item)
+                        self.grid.datagrid('beginEdit', index);
+                    });
+                    return false;
+                });
+
+                //删除
+                $('[data-handle="delete"]').on('click', function () {
+                    return false;
+                });
+                //确认
+                $('[data-handle="ok"]').on('click', function () {
+                    var isValid = true,
+                       grid = self.grid;
+                    if (!grid.datagrid('getChanges')) {
+                        eMessager.warning('没有需要保存的数据');
+                        return;
+                    }
+                    $.each(grid.datagrid('getRows'), function (i, index) {
+                        if (!grid.datagrid('validateRow', i)) {
+                            grid.datagrid('selectRow', i);
+                            isValid = false;
+                        }
+                    });
+                    if (isValid === false) {
+                        eMessager.warning('当前有编辑行未通过验证');
+                        return;
+                    };
+
+                    $.each(grid.datagrid('getRows'), function (i, index) {
+                        grid.datagrid('endEdit', i);
+                    });
+                    var postData = { 'buttons': self.grid.datagrid('getChanges') };
+                    eUtil.ajax({
+                        url: '/Button/Edit',
+                        data: postData,
+                        done: function (data) {
+                            self.editRows = [];
+                            grid.datagrid('acceptChanges');
+                            eMessager.info('保存成功');
+                            self.grid.datagrid('reload');
+                        }
+                    });
+                    return false;
+                });
+
+                //取消
+                $('[data-handle="cancel"]').on('click', function () {
+                    self.grid.datagrid('rejectChanges');
+                    //window.parent.$('.dialog').dialog('close');
+                    window.api.close();
+                    return false;
+                });
+            }
+
+        });
+    </script>
+}

@@ -1,0 +1,44 @@
+﻿
+body {
+    background: #dfdfdf;
+}
+#main{
+    margin-top:200px;
+}
+#main > div {
+    width: 300px;
+    height: 227px;
+    margin: 0 auto;
+}
+
+#main table {
+    background-color: #fff;
+    border-radius:10px;
+    width:361px;
+}
+#main table tr:first-child td:nth-child(1){
+   width:95px;
+}
+#main table tr:nth-child(3) td:first-child  span{
+    margin-left:50px;
+}
+#main input[type="text"],#main input[type="password"]{
+    padding:5px 0;
+    margin:5px 0;
+    margin-left:5px;
+    width:200px;
+}
+#main table tr:last-child td:first-child{
+    text-align:center;
+    background: #E8E8E8;
+    padding:15px;
+    border-top: 1px dotted #CCC;
+}
+#main table tr:last-child td:first-child>input{
+    width:130px;
+    height:30px;
+    border-radius:5px;
+}
+/*#main table td:nth-child(1),#main table td:nth-child(3){
+    text-align:right;
+}*/

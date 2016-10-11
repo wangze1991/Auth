@@ -1,0 +1,246 @@
+﻿@{
+    ViewBag.Title = "角色菜单按钮设置";
+    Layout = "~/Views/shared/_EasyUiLayout.cshtml";
+}
+
+<!--body开始-->
+<div class="easyui-layout" fit="true">
+    <div region="north" style="height:35px;" split="true">
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-add" title="新增" data-handle="refresh">刷新</a>
+    </div>
+
+    <div region="center" title="角色权限管理" fit="true">
+        <table id="grid"></table>
+    </div>
+</div>
+
+@section script{
+    <script>
+        require(['jquery', 'util', 'easyui', 'eMessager', 'eUtil', 'template'], function ($, util, easyui, eMessager, eUtil, template) {
+            require(['domReady'], function (doms) {
+                var exporter = {};
+                exporter.opts = {
+                    roleId: util.getQuery('roleId'),
+                    grid: $('#grid'),
+                    url: '/Module/GetModuleWithButtons',
+                    form: 'ff',
+                    tmp: 'edit_template',
+                    deleteUrl: 'edit_template',
+                    setRoleUrl: '',
+                    button: {
+                        '': '',
+                        '': ''
+                    },
+                };
+                exporter.init = function () {
+                    this.grid.init();
+                    this.button.init();
+                }
+                //**grid**
+                exporter.grid = {};
+                exporter.grid.init = function () {
+                    exporter.opts.grid.treegrid({
+                        idField: 'ModuleId',
+                        treeField: 'ModuleName',
+                        url: exporter.opts.url,
+                        rownumbers: true,
+                        fit: true,
+                        border: false,
+                        singleSelect: true,
+                        rownumbers: false,
+                        nowrap: false,
+                        striped: false,
+                        showHeader: false,
+                        scrollbarSize: 5,
+                        columns: this.getColumn(),
+                        loadFilter: function (data) {
+                            $.each(data.rows, function (i, item) {
+                                data.rows[i]['_parentId'] = data.rows[i]['ParentCode'];
+                            })
+                            return data;
+                        },
+                        onLoadSuccess: function () {
+                            exporter.grid.loadButtons();
+                        }
+
+                    });
+                }
+                exporter.grid.getColumn = function () {
+                    return [[
+                           {
+                               field: 'ModuleName', title: '菜单名称', width: 180, align: 'left', formatter: function (value, row, index) {
+                                   var h = value;
+                                   if (!row.ParentCode) {
+                                       h = '<span style="font-weight:bold; color:blue;">' + h + '</span>';
+                                   }
+                                   var h_input_checkbox = '<input type="checkbox"  class="ckmenu" data-id="' + row.ModuleId + '"/>  ';
+                                   return h_input_checkbox + h;
+                               }
+                           },
+                            {
+                              field: 'ParentId', title: '菜单说明', width: 100, align: 'left', formatter: function (value, row, index) {
+                                  var h = '未定义';
+                                  if (value)
+                                      h = exporter.getColorHtml('green', '页面');
+                                  else
+                                      h = exporter.getColorHtml('#514B51', '目录');
+                                  var h2 = '未定义';
+                                  if (row.Buttons && row.Buttons.length > 0)
+                                      h2 = '按钮';
+                                  else
+                                      h2 = '无按钮';
+                                  var html = h + ' | ' + h2;
+                                  return html;
+                              }
+                          },
+                                 {
+                                     field: 'Buttons',
+                                     title: '按钮权限',
+                                     align: 'left',
+                                     formatter: function (value, row, index) {
+                                         if (!value || value.length === 0) return '';
+                                         var html = '';
+                                         $.each(value, function (i, item) {
+                                             html += '<span><input data-id="' + item['Id'] + '" type="checkbox" class="ckbtn"/><span class="icon ' + item['Icon'] + '">&nbsp&nbsp&nbsp&nbsp</span>' + item['Name'] + '</span>'
+                                         });
+                                         return html;
+                                     }
+                                 }]];
+
+                }
+                exporter.grid.reload = function () {
+                    exporter.opts.grid.datagrid('reload');
+                }
+                exporter.grid.getSelection = function () {
+                    return exporter.opts.grid.datagrid('getSelections');
+                }
+                exporter.grid.loadButtons = function () {
+                    eUtil.ajax({
+                        url: '/Module/GetRoleModuleButton',
+                        async:false,
+                        data: { roleId: exporter.opts.roleId },
+                        done: function (data) {
+
+                            var jsonData = data.data;
+                            var menuArray = $.map(jsonData, function (value, i) {
+                                if (value['ButtonId'] == -1) return value;
+                            });
+
+                            $.each(jsonData, function (i, item) {
+                                $('.ckmenu').each(function (j,menu) {
+                                    if ($(this).attr('data-id') == item['ModuleId']) {
+                                        $(this).prop('checked', true);
+                                        var buttonArray = $.map(jsonData, function (value, k) {
+                                            if (value['ModuleId'] == item['ModuleId'] && value['ButtonId'] != '-1') {
+                                                return value;
+                                            }
+                                        });
+                                        var ckBtn=$(this).closest('tr').find('.ckbtn');
+                                        $.each(buttonArray,function(v,btnArray){
+                                            ckBtn.each(function(l,btn){
+                                                if ($(this).attr('data-id') == btnArray['ButtonId']) {
+                                                    $(this).prop('checked',true);
+                                                }
+                                            });
+                                        })
+                           
+                                    }
+                                });
+                            });
+                        }
+                    });
+                }
+                //**grid end**
+
+                exporter.button = {};
+                exporter.button.init = function () {
+                    this.moduleButton();
+                };
+                exporter.button.moduleButton = function () {
+                    $(document).on('click','.ckbtn',function () {
+                        var self = $(this),
+                            data = {},
+                            moduleTr = self.closest('tr').find(':checkbox.ckmenu');
+                        if (!moduleTr.prop('checked')) {
+                            eMessager.warning('请选择菜单栏');
+                            self.prop('checked',false);
+                            return;
+                        }
+                        data['ModuleId'] = moduleTr.attr('data-id');
+                        data['RoleId'] = exporter.opts.roleId;
+                        data['ButtonId'] = self.attr('data-id');
+                        var url = "/Module/SaveRoleModuleButton";
+                        eUtil.ajax({
+                            url:url,
+                            data:data
+                        });
+                    });
+
+                    $(document).on('click', '.ckmenu', function () {
+                        var self = $(this),
+                            data = {},
+                            url ="/Module/SaveRoleModuleButton" ;
+                        data['ModuleId'] = self.attr('data-id');
+                        data['RoleId'] = exporter.opts.roleId;
+                        data['ButtonId'] = -1;
+                        eUtil.ajax({
+                            url:url,
+                            data: data
+                        });
+
+                    });
+
+                };
+
+
+
+                exporter.showWindow = function (title, html, url, onBeforeOpen) {
+                    eUtil.showWindow({
+                        width: 580,
+                        height: 300,
+                        title: title,
+                        content: html,
+                        onBeforeOpen: function (body, win) {
+                            onBeforeOpen(body, win, url);
+                        },
+                        buttons: [{
+                            text: '确认', iconCls: 'icon-ok', handler: function (body) {
+                                window.top.$('#' + exporter.opts.form).submit();
+                                return false;
+
+                            }
+                        }, {
+                            text: '取消', iconCls: 'icon-cancel', handler: function (body) {
+                                body.close();
+                            }
+                        }]
+                    });
+
+                }
+                exporter.formValid = function (body, win, url) {
+                    win.$('#' + exporter.opts.form).form({
+                        url: url,
+                        onSubmit: function () {
+                            var isValid = win.$(this).form('validate');
+                            return isValid;
+                        },
+                        success: function (data) {
+                            data = $.parseJSON(data);
+                            if (data && data.isSuccess) {
+                                body.close();
+                                exporter.grid.reload();
+                                eMessager.info('保存成功', '提示');
+                            } else {
+                                eMessager.warning('保存失败', '提示');
+                            }
+                        }
+                    });
+                }
+                exporter.getColorHtml = function (color, content) {
+                    return '<span style="font-weight:bold; color:' + color + ';">' + content + '</span>';
+                }
+                exporter.init();
+            });
+        });
+    </script>
+}

@@ -1,0 +1,151 @@
+﻿@model IEnumerable<Auth.Sample.Domain.T_Button>
+@{
+    ViewBag.Title = "页面按钮选择";
+    Layout = "~/Views/shared/_EasyUiLayout.cshtml";
+}
+@section css{
+    <style type="text/css">
+        body {
+            height: 100%;
+        }
+
+        #main {
+            padding: 5px;
+        }
+
+        .title {
+            padding: 5px 0;
+            height: 30px;
+            margin-bottom: 10px;
+        }
+
+            .title > span {
+                padding-left: 15px;
+            }
+
+        .line {
+            border-bottom: 1px solid #ccc;
+        }
+
+        .list ul {
+            overflow: hidden;
+        }
+
+        .list li {
+            width: 75px;
+            height: 30px;
+            margin-right: 5px;
+            text-align: center;
+            float: left;
+            list-style-type: none;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+            .list li span {
+                line-height: 30px;
+            }
+
+        .list .checked {
+            background-color: rgb(83, 142, 203);
+            color: white;
+        }
+    </style>
+}
+<div id="main">
+    <div class="title line">
+        <img style="width:1em;height:1em" />
+        <span>请选择页面按钮</span>
+    </div>
+    <div>
+        <div style="position:relative">
+            <input type="checkbox" />全选
+            <a href="#" style="position:absolute;right:0" data-handle-id="manage">管理按钮库</a>
+        </div>
+        <!--按钮列表-->
+        <div class="list">
+            <ul>
+                @foreach (var button in Model)
+                {
+                    <li data-button-id="@button.Id">
+                        <i class="icon @button.Icon" style="width:16px;height:16px;display:inline-block">
+                        </i>
+                        <span>@button.Name</span>
+                    </li>
+                }
+            </ul>
+
+        </div>
+    </div>
+    <div style="width:200px;position:absolute;left:40%;bottom:10px;">
+        <a href="#" class="easyui-linkbutton" icon="icon-ok" title="确定" data-handle="ok">确定</a>
+        <a href="#" class="easyui-linkbutton" icon="icon-cancel" title="取消" data-handle="cacel">取消</a>
+    </div>
+</div>
+@section script{
+    <script>
+        require(['jquery', 'util', 'easyui', 'eMessager', 'eUtil'], function ($, util, easyui, eMessager, eUtil) {
+            var buttonLi = $('.list li'),
+                btnYes = $('[data-handle="ok"]'),
+                btnNo = $('[data-handle="cacel"]'),
+                moduleId = util.getQuery('id'),
+                manageBtn = $('[data-handle-id="manage"]');
+            require(['domReady'], function (doc) {
+                init();
+                buttonLi.on('click', function () {
+                    $(this).toggleClass('checked');
+                });
+                btnYes.on('click', function () {
+                    getYesEvent();
+                });
+                btnNo.on('click', function () {
+                    //window.parent.$('.dialog').dialog('close');
+                    window.api.close();
+                    return false;
+                });
+                manageBtn.on('click', function () {
+                    eUtil.iframeDialog({
+                        url: '/Button',
+                        title: '管理按钮库'
+                    });
+                    return false;
+                });
+
+            });
+
+            function init() {
+                if (!moduleId) {
+                    eMessager.warning('页面出错了，请关闭页面，重新打开');
+                    return false;
+                }
+                eUtil.ajax({
+                    url: '/Button/GetButtonsByModuleId',
+                    data: { moduleId: moduleId },
+                    done: function (data) {
+                        var result = data['data'];//获取值
+                        $.each(result, function (i, value) {
+                            $('[data-button-id="' + value + '"]').trigger('click');
+                        });
+                    }
+                });
+            }
+            function getYesEvent() {
+                var ids = buttonLi.map(function () {
+                    if ($(this).hasClass('checked')) return $(this).attr('data-button-id');
+                }).get();
+                eUtil.ajax({
+                    url: '/Button/Save',
+                    type: 'post',
+                    data: { moduleId: moduleId, buttonIds: ids },
+                    traditional: true,
+                    done: function (data) {
+                        eMessager.info('保存成功', '提示', function () {
+                            btnNo.click();
+                        });
+
+                    }
+                });
+            }
+        });
+    </script>
+}

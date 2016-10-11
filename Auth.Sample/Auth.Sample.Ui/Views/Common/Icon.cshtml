@@ -1,0 +1,52 @@
+﻿@{
+    Layout = "~/Views/shared/_EasyUiLayout.cshtml";
+}
+@section css{
+    <style>
+        #main {width:500px;}
+        #content { width: 360px;}
+        ul.iconlist > li {float: left;margin: 5px;padding: 5px;list-style-type: none;}
+        ul.iconlist li span {display: block;width: 16px;height: 16px;}
+        .center {margin: 0 auto;}
+    </style>
+}
+<div>
+    <div id="main" class="center">
+        <div id="content">
+
+        </div>
+        <div id="pager">
+
+        </div>
+    </div>
+</div>
+@section script{
+    <script>
+        require(['jquery', 'laypage'], function ($, laypage) {
+            laypage.dir = '/static/js/vendor/laypage/skin/laypage.css';
+            require(['domReady'], function (dom) {
+                function demo(curr) {
+                    $.getJSON('/Common/GetIcon', {
+                        Page: curr || 1 //向服务端传的参数，此处只是演示
+                    }, function (res) {
+                        $('#content').html(res.data);
+                        //显示分页
+                        laypage({
+                            cont: 'pager', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                            pages: res.pages, //通过后台拿到的总页数
+                            curr: curr || 1, //当前页
+                            jump: function (obj, first) { //触发分页后的回调
+                                if (!first) { //点击跳页触发函数自身，并传递当前页：obj.curr
+                                    demo(obj.curr);
+                                }
+                            }
+                        });
+                    });
+                };
+                //运行
+                demo();
+            });
+        });
+    </script>
+}
+

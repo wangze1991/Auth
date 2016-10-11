@@ -1,0 +1,87 @@
+﻿@{
+    ViewBag.Title = "用户管理";
+    Layout = "~/Views/shared/_EasyUiLayout.cshtml";
+}
+
+<div class="easyui-layout" fit="true">
+    <div region="north" style="height:35px;">
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-arrow_refresh" title="刷新" data-handle="reload">刷新</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-add" title="新增" data-handle="add">新增</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-edit" title="编辑" data-handle="edit">编辑</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-cross" title="删除" data-handle="delete">删除</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-redo" title="取消" data-handle="cancel">取消</a>
+        <a href="#" plain="true" class="easyui-linkbutton" icon="icon-save" title="保存" data-handle="save">保存</a>
+    </div>
+    <div region="center" title="用户列表" fit="true" style="height:100%">
+        <table id="grid"></table>
+    </div>
+    <div region="east" title="" style="width:500px;">
+        <div id="tt" style="width:500px;">
+            <div title="用户信息" style="padding:20px;">
+                用户信息
+            </div>
+            <div title="用户角色" style="padding:20px;">
+                <a id="btn-user-role-save" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-save'">保存用户角色</a>
+                <table id="role-grid"></table>
+            </div>
+        </div>
+    </div>
+</div>
+<script id="edit_template" type="text/html">
+    <form id="ff" method="post">
+        <input  type="hidden" name="Id" value="{{Id}}" />
+        <table class="table table-bordered" style="margin:0 auto">
+            <tr>
+                <td>
+                    <label for="IsOpen">启用:</label>
+                </td>
+                <td>
+                    <select class="easyui-combobox" name="IsOpen" style="width:100px;" id="IsOpen">
+                        <option value="">--请选择--</option>
+                        <option value="true">启用</option>
+                        <option value="false">禁用</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="UserName">用户名:</label>
+                </td>
+                <td>
+                    <input type="text" name="UserName" value="{{UserName}}" class="easyui-validatebox" data-options="required:true" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="Sex">性别:</label>
+                </td>
+                <td>
+                    <select class="easyui-combobox " id="Sex" name="Sex" style="width:100px;" data-options="required:true">
+                        <option value="">--请选择--</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="Mobile">联系电话:</label>
+                </td>
+                <td>
+                    <input type="text" name="Mobile" value="{{Mobile}}" class="easyui-validatebox" data-options="required:true" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="QQ">QQ:</label>
+                </td>
+                <td>
+                    <input type="text" name="QQ" value="{{QQ}}" class="easyui-validatebox" data-options="required:true" />
+                </td>
+            </tr>
+        </table>
+    </form>
+</script>
+@section script{
+<script src="~/static/js/modules/user/index.js?v=@DateTime.Now.Ticks"></script>
+}

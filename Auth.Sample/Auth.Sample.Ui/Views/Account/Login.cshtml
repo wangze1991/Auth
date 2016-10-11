@@ -1,0 +1,70 @@
+﻿@model Auth.Sample.Ui.Models.LogOnModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<link href="~/static/css/reset.css" rel="stylesheet" />
+<link href="~/static/css/cssbtn.css" rel="stylesheet" />
+<link href="~/static/css/module/login/login.css" rel="stylesheet" />
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>登录</title>
+</head>
+<body>
+    <div id="main">
+        <div>
+            <div id="content">
+                <img src="~/static/css/images/km_logo_easyui.png" />
+                <form>
+                    @Html.AntiForgeryToken()
+                    @Html.Hidden("ReturnUrl",Request.QueryString["ReturnUrl"])
+                    <table>
+                        <tr>
+                            <td class="text_right">
+                                <label>用户名:</label>
+                            </td>
+                            <td>
+                                @Html.TextBoxFor(m => m.UserName, new { placeholder = "用户名",tableindex="1" })
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text_right">
+                                <label>密码:</label>
+                            </td>
+                            <td>
+                                @Html.PasswordFor(m => m.Password, new { placeholder = "密码", tableindex = "2" })
+
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"> 
+                                    <span >
+                                        @Html.CheckBoxFor(m => m.RememberMe)
+                                        <span style="margin-left:26px;">记住密码</span>
+                                    </span>                    
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                @Html.ValidationSummary()
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <input type="submit" value="登录" class="cssbtn cssbtn_size12 cssbtn_green" />
+                            </td>
+                        </tr>
+              
+                    </table>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/static/js/vendor/require/require.js"></script>
+    <script src="~/static/main.js"></script>
+    <script src="~/static/js/modules/account/acount.login.js"></script>
+</body>
+</html>
