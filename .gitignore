@@ -108,7 +108,7 @@ AppPackages/
 
 # Others
 sql/
-*.Cache
+#*.Cache  --这个要注释掉
 ClientBin/
 [Ss]tyle[Cc]op.*
 ~$*
